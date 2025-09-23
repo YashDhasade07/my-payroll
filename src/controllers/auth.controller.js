@@ -25,14 +25,14 @@ export default class AuthController {
             }
 
             // Hash password
-            const hashedPassword = await bcrypt.hash(password, 12);
+            // const hashedPassword = await bcrypt.hash(password, 12);
 
             // Create user
             const user = await this.authRepository.create({
                 firstName,
                 lastName,
                 email,
-                password: hashedPassword,
+                password,
                 role,
                 phone,
                 department
@@ -66,13 +66,17 @@ export default class AuthController {
             }
 
             // Find user with password field
+            console.log(111)
             const user = await this.authRepository.findByEmailWithPassword(email);
+            console.log(user)
             if (!user) {
                 throw new ApplicationError('Invalid credentials', 401);
             }
-
+            console.log(222)
+            console.log(password)
             // Check password
             const isValidPassword = await bcrypt.compare(password, user.password);
+            console.log(isValidPassword)
             if (!isValidPassword) {
                 throw new ApplicationError('Invalid credentials', 401);
             }
@@ -124,6 +128,7 @@ export default class AuthController {
             // Find user
             const user = await this.authRepository.findByEmail(email);
             if (!user) {
+                // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 // Don't reveal if user exists or not for security
                 return res.status(200).json({
                     success: true,

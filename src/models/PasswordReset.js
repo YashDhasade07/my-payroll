@@ -28,7 +28,7 @@ const passwordResetSchema = new mongoose.Schema({
 
 // Index for performance and auto-cleanup
 passwordResetSchema.index({ userId: 1 });
-passwordResetSchema.index({ token: 1 });
+// passwordResetSchema.index({ token: 1 });
 passwordResetSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 }); // Auto-delete expired documents
 
 // Index for efficient querying of valid tokens

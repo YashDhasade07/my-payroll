@@ -21,7 +21,7 @@ const tokenSchema = new mongoose.Schema({
 
 // Index for performance and auto-cleanup
 tokenSchema.index({ userId: 1 });
-tokenSchema.index({ token: 1 });
+// tokenSchema.index({ token: 1 });
 tokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 export default mongoose.model('Token', tokenSchema);
