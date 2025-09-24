@@ -7,15 +7,15 @@ const tokenRepository = new TokenRepository();
 const jwtAuth = async (req, res, next) => {
     try {
         // Get token from header
-        const authHeader = req.headers['authorization'];
-        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        const token = req.headers['authorization'];
+        if (!token) {
             return res.status(401).json({
                 success: false,
                 message: 'Access denied. No token provided.'
             });
         }
 
-        const token = authHeader.replace('Bearer ', '');
+        // const token = authHeader.replace('Bearer ', '');
 
         // Check if token exists in database
         const tokenDoc = await tokenRepository.findByToken(token);

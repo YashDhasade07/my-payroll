@@ -121,4 +121,12 @@ export default class UserRepository {
             throw new ApplicationError('Error getting user statistics', 500);
         }
     }
+
+    async findByIds(userIds) {
+        try {
+            return await User.find({ _id: { $in: userIds } }).select('-password').lean();
+        } catch (error) {
+            throw new ApplicationError('Error finding users by IDs', 500);
+        }
+    }
 }

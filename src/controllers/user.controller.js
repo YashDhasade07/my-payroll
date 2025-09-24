@@ -221,7 +221,6 @@ export default class UserController {
                 phone,
                 department
             };
-
             // Remove undefined values
             Object.keys(updateData).forEach(key => 
                 updateData[key] === undefined && delete updateData[key]

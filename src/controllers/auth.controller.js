@@ -66,17 +66,12 @@ export default class AuthController {
             }
 
             // Find user with password field
-            console.log(111)
             const user = await this.authRepository.findByEmailWithPassword(email);
-            console.log(user)
             if (!user) {
                 throw new ApplicationError('Invalid credentials', 401);
             }
-            console.log(222)
-            console.log(password)
             // Check password
             const isValidPassword = await bcrypt.compare(password, user.password);
-            console.log(isValidPassword)
             if (!isValidPassword) {
                 throw new ApplicationError('Invalid credentials', 401);
             }
@@ -89,7 +84,7 @@ export default class AuthController {
                     role: user.role 
                 }, 
                 process.env.JWT_SECRET || 'your-secret-key',
-                { expiresIn: '1h' }
+                { expiresIn: '12h' }
             );
 
             // Store token in database
@@ -128,7 +123,7 @@ export default class AuthController {
             // Find user
             const user = await this.authRepository.findByEmail(email);
             if (!user) {
-                // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
                 // Don't reveal if user exists or not for security
                 return res.status(200).json({
                     success: true,
@@ -224,7 +219,7 @@ export default class AuthController {
     // Handle logout
     async logout(req, res, next) {
         try {
-            const token = req.headers['authorization']?.replace('Bearer ', '');
+            const token = req.headers['authorization']
             
             if (!token) {
                 throw new ApplicationError('Token is required', 400);

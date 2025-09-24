@@ -1,6 +1,10 @@
 import express from 'express';
 import UserController from '../controllers/user.controller.js';
+import AppointmentController from '../controllers/appointment.controller.js';
+import BlockingController from '../controllers/blocking.controller.js';
 import jwtAuth from '../middleware/jwt.middleware.js';
+let appointmentController = new AppointmentController();
+let blockingController = new BlockingController();
 
 const userRouter = express.Router();
 let userController = new UserController();
@@ -18,12 +22,40 @@ userRouter.put('/profile', jwtAuth, (req, res, next) => {
     userController.updateCurrentUserProfile(req, res, next);
 });
 
+userRouter.get('/blocked', jwtAuth, (req, res, next) => {
+    blockingController.getMyBlockedUsers(req, res, next);
+});
+
+userRouter.post('/block', jwtAuth, (req, res, next) => {
+    blockingController.blockUser(req, res, next);
+});
+
+userRouter.get('/blocked-by', jwtAuth, (req, res, next) => {
+    blockingController.getUsersWhoBlockedMe(req, res, next);
+});
+
+userRouter.delete('/block/:userId', jwtAuth, (req, res, next) => {
+    blockingController.unblockUser(req, res, next);
+});
+
 userRouter.get('/managers', jwtAuth, (req, res, next) => {
     userController.getAllManagers(req, res, next);
 });
 
 userRouter.get('/developers', jwtAuth, (req, res, next) => {
     userController.getAllDevelopers(req, res, next);
+});
+
+userRouter.get('/:userId/appointments/created', jwtAuth, (req, res, next) => {
+    appointmentController.getUserCreatedAppointments(req, res, next);
+});
+
+userRouter.get('/:userId/appointments/assigned', jwtAuth, (req, res, next) => {
+    appointmentController.getUserAssignedAppointments(req, res, next);
+});
+
+userRouter.get('/:userId/blocked', jwtAuth, (req, res, next) => {
+    blockingController.checkIfUserBlocked(req, res, next);
 });
 
 userRouter.get('/:id', jwtAuth, (req, res, next) => {
