@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import TokenRepository from '../repositories/token.repository.js';
+import redisService from '../services/redis.service.js';
 import ApplicationError from './applicationError.js';
 
 const tokenRepository = new TokenRepository();
@@ -16,8 +17,22 @@ const jwtAuth = async (req, res, next) => {
         }
 
         // const token = authHeader.replace('Bearer ', '');
-
+        let tokenData = await redisService.getToken(token);
         // Check if token exists in database
+        // const tokenDoc = await tokenRepository.findByToken(token);
+        if (tokenData) {
+            // Verify JWT token
+            const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+            
+            // Add user info to request
+            req.userId = decoded.userId;
+            req.userEmail = decoded.email;
+            req.userRole = decoded.role;
+            req.token = token;
+    
+           return next();
+        }
+
         const tokenDoc = await tokenRepository.findByToken(token);
         if (!tokenDoc) {
             return res.status(401).json({
@@ -26,10 +41,16 @@ const jwtAuth = async (req, res, next) => {
             });
         }
 
-        // Verify JWT token
+
+        //Cache in Redis for future requests
+        let cacheResult = await redisService.storeToken(
+            token, 
+            tokenDoc.userId.toString(), 
+            3600 // 1 hour
+        );
+
         const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
         
-        // Add user info to request
         req.userId = decoded.userId;
         req.userEmail = decoded.email;
         req.userRole = decoded.role;

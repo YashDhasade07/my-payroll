@@ -902,7 +902,6 @@ export default class AppointmentController {
     // Export appointments to file
     async exportAppointments(req, res, next) {
         try {
-            console.log('Right function')
             const userId = req.userId;
             const userRole = req.userRole;
             const format = req.query.format || 'csv'; // csv, excel, json
