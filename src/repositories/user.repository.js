@@ -129,4 +129,19 @@ export default class UserRepository {
             throw new ApplicationError('Error finding users by IDs', 500);
         }
     }
+
+    async create(userData) {
+        try {
+            const user = new User(userData);
+            return await user.save();
+        } catch (error) {
+            if (error.code === 11000) {
+                throw new ApplicationError('User with this email already exists', 400);
+            }
+            if (error.name === 'ValidationError') {
+                throw new ApplicationError(error.message, 400);
+            }
+            throw new ApplicationError('Error creating user', 500);
+        }
+    }
 }

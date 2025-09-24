@@ -1,0 +1,6 @@
+firstName,lastName,email,password,role,phone,department
+Alex,Carter,alex.carter@example.com,alexPass123,Manager,1112223333,IT
+Mia,Robinson,mia.robinson@example.com,miaPwd456,Developer,2223334444,Engineering
+Ethan,Walker,ethan.walker@example.com,ethanPass789,Manager,3334445555,Finance
+Isabella,Hall,isabella.hall@example.com,isaPwd321,Developer,4445556666,Design
+Lucas,Young,lucas.young@example.com,lucasPass111,HR,5556667777,Human Resources

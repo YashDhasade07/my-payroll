@@ -22,6 +22,14 @@ appointmentRouter.get('/my-assigned', jwtAuth, (req, res, next) => {
     appointmentController.getMyAssignedAppointments(req, res, next);
 });
 
+appointmentRouter.get('/export', jwtAuth, (req, res, next) => {
+    appointmentController.exportAppointments(req, res, next);
+});
+
+appointmentRouter.get('/filter', jwtAuth, (req, res, next) => {
+    appointmentController.filterAppointments(req, res, next);
+});
+
 appointmentRouter.get('/:id', jwtAuth, (req, res, next) => {
     appointmentController.getAppointmentById(req, res, next);
 });
@@ -46,5 +54,7 @@ appointmentRouter.put('/:id/decline', jwtAuth, (req, res, next) => {
 appointmentRouter.get('/:id/status', jwtAuth, (req, res, next) => {
     appointmentController.getAppointmentStatus(req, res, next);
 });
+
+
 
 export default appointmentRouter;

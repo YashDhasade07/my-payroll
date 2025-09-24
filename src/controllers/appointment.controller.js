@@ -795,4 +795,291 @@ export default class AppointmentController {
             next(new ApplicationError('Something went wrong while retrieving user assigned appointments', 500));
         }
     }
+
+    async filterAppointments(req, res, next) {
+        try {
+            const userId = req.userId;
+            const userRole = req.userRole;
+            const page = parseInt(req.query.page) || 1;
+            const limit = parseInt(req.query.limit) || 10;
+    
+            // Build complex filters
+            const filters = {};
+    
+            // Date range filtering
+            if (req.query.startDate || req.query.endDate) {
+                filters.scheduledDate = {};
+                if (req.query.startDate) {
+                    filters.scheduledDate.$gte = new Date(req.query.startDate);
+                }
+                if (req.query.endDate) {
+                    filters.scheduledDate.$lte = new Date(req.query.endDate);
+                }
+            }
+    
+            // Status filtering (multiple values supported)
+            if (req.query.status) {
+                const statuses = req.query.status.split(',');
+                filters.status = { $in: statuses };
+            }
+    
+            // Duration filtering
+            if (req.query.minDuration) {
+                filters.duration = { $gte: parseInt(req.query.minDuration) };
+            }
+            if (req.query.maxDuration) {
+                if (filters.duration) {
+                    filters.duration.$lte = parseInt(req.query.maxDuration);
+                } else {
+                    filters.duration = { $lte: parseInt(req.query.maxDuration) };
+                }
+            }
+    
+            // Manager filtering
+            if (req.query.managerId) {
+                filters.manager = req.query.managerId;
+            }
+    
+            // Attendee status filtering
+            if (req.query.attendeeStatus) {
+                filters['attendees.status'] = req.query.attendeeStatus;
+            }
+    
+            // Department filtering (through manager/attendees)
+            if (req.query.department) {
+                // This would require a more complex aggregation query
+                // For now, we'll skip this advanced feature
+            }
+    
+            // Role-based access control
+            if (userRole === 'Developer') {
+                // Developers see only appointments they're assigned to
+                filters['attendees.user'] = userId;
+            } else if (userRole === 'Manager') {
+                // Managers can see all or filter by their own
+                if (req.query.myAppointments === 'true') {
+                    filters.$or = [
+                        { manager: userId },
+                        { 'attendees.user': userId }
+                    ];
+                }
+            }
+    
+            const result = await this.appointmentRepository.getAllWithPagination(page, limit, filters);
+    
+            // Calculate summary statistics
+            const summary = {
+                totalAppointments: result.totalAppointments,
+                statusBreakdown: await this.calculateStatusBreakdown(filters),
+                avgDuration: await this.calculateAvgDuration(filters)
+            };
+    
+            res.status(200).json({
+                success: true,
+                message: 'Filtered appointments retrieved successfully',
+                data: result.appointments,
+                summary,
+                filters: req.query,
+                pagination: {
+                    currentPage: page,
+                    totalPages: result.totalPages,
+                    totalAppointments: result.totalAppointments,
+                    limit: limit,
+                    hasNext: page < result.totalPages,
+                    hasPrev: page > 1
+                }
+            });
+    
+        } catch (error) {
+            console.log(error);
+            if (error instanceof ApplicationError) {
+                return next(error);
+            }
+            next(new ApplicationError('Something went wrong while filtering appointments', 500));
+        }
+    }
+    
+    // Export appointments to file
+    async exportAppointments(req, res, next) {
+        try {
+            console.log('Right function')
+            const userId = req.userId;
+            const userRole = req.userRole;
+            const format = req.query.format || 'csv'; // csv, excel, json
+    
+            if (!['csv', 'excel', 'json'].includes(format)) {
+                throw new ApplicationError('Invalid export format. Supported: csv, excel, json', 400);
+            }
+    
+            // Build filters (same logic as filter endpoint)
+            const filters = {};
+    
+            // Date range
+            if (req.query.startDate || req.query.endDate) {
+                filters.scheduledDate = {};
+                if (req.query.startDate) {
+                    filters.scheduledDate.$gte = new Date(req.query.startDate);
+                }
+                if (req.query.endDate) {
+                    filters.scheduledDate.$lte = new Date(req.query.endDate);
+                }
+            }
+    
+            // Status
+            if (req.query.status) {
+                const statuses = req.query.status.split(',');
+                filters.status = { $in: statuses };
+            }
+    
+            // Manager
+            if (req.query.managerId) {
+                filters.manager = req.query.managerId;
+            }
+    
+            // Role-based access
+            if (userRole === 'Developer') {
+                filters['attendees.user'] = userId;
+            } else if (userRole === 'Manager' && req.query.myAppointments === 'true') {
+                filters.$or = [
+                    { manager: userId },
+                    { 'attendees.user': userId }
+                ];
+            }
+    
+            // Get all appointments (no pagination for export)
+            const appointments = await this.appointmentRepository.getAllForExport(filters);
+    
+            // Generate filename
+            const timestamp = new Date().toISOString().split('T')[0];
+            const filename = `appointments_export_${timestamp}.${format}`;
+    
+            if (format === 'json') {
+                res.setHeader('Content-Type', 'application/json');
+                res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+                return res.json({
+                    exportDate: new Date(),
+                    totalRecords: appointments.length,
+                    filters: req.query,
+                    data: appointments
+                });
+            }
+    
+            if (format === 'csv') {
+                const csvData = this.convertToCSV(appointments);
+                res.setHeader('Content-Type', 'text/csv');
+                res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+                return res.send(csvData);
+            }
+    
+            if (format === 'excel') {
+                // For Excel export, you'd use a library like 'xlsx'
+                throw new ApplicationError('Excel export not implemented yet', 501);
+            }
+    
+        } catch (error) {
+            console.log(error);
+            if (error instanceof ApplicationError) {
+                return next(error);
+            }
+            next(new ApplicationError('Something went wrong while exporting appointments', 500));
+        }
+    }
+    
+    // Helper method to convert appointments to CSV
+    convertToCSV(appointments) {
+        if (appointments.length === 0) {
+            return 'No appointments found';
+        }
+    
+        const headers = [
+            'ID',
+            'Title',
+            'Description', 
+            'Manager Name',
+            'Manager Email',
+            'Scheduled Date',
+            'Duration (minutes)',
+            'Status',
+            'Attendees',
+            'Accepted Count',
+            'Declined Count',
+            'Pending Count',
+            'Created At'
+        ];
+    
+        const csvRows = [headers.join(',')];
+    
+        appointments.forEach(appointment => {
+            const attendeeNames = appointment.attendees.map(a => 
+                `${a.user.firstName} ${a.user.lastName} (${a.status})`
+            ).join('; ');
+    
+            const acceptedCount = appointment.attendees.filter(a => a.status === 'accepted').length;
+            const declinedCount = appointment.attendees.filter(a => a.status === 'declined').length;
+            const pendingCount = appointment.attendees.filter(a => a.status === 'pending').length;
+    
+            const row = [
+                appointment._id,
+                `"${appointment.title}"`,
+                `"${appointment.description || ''}"`,
+                `"${appointment.manager.firstName} ${appointment.manager.lastName}"`,
+                appointment.manager.email,
+                appointment.scheduledDate,
+                appointment.duration,
+                appointment.status,
+                `"${attendeeNames}"`,
+                acceptedCount,
+                declinedCount,
+                pendingCount,
+                appointment.createdAt
+            ];
+    
+            csvRows.push(row.join(','));
+        });
+    
+        return csvRows.join('\n');
+    }
+    
+    // Helper method for status breakdown
+    async calculateStatusBreakdown(filters) {
+        try {
+            const pipeline = [
+                { $match: filters },
+                {
+                    $group: {
+                        _id: '$status',
+                        count: { $sum: 1 }
+                    }
+                }
+            ];
+    
+            const result = await this.appointmentRepository.aggregate(pipeline);
+            return result.reduce((acc, item) => {
+                acc[item._id] = item.count;
+                return acc;
+            }, {});
+        } catch (error) {
+            return {};
+        }
+    }
+    
+    // Helper method for average duration
+    async calculateAvgDuration(filters) {
+        try {
+            const pipeline = [
+                { $match: filters },
+                {
+                    $group: {
+                        _id: null,
+                        avgDuration: { $avg: '$duration' }
+                    }
+                }
+            ];
+    
+            const result = await this.appointmentRepository.aggregate(pipeline);
+            return result.length > 0 ? Math.round(result[0].avgDuration) : 0;
+        } catch (error) {
+            return 0;
+        }
+    }
 }

@@ -149,4 +149,24 @@ export default class AppointmentRepository {
             throw new ApplicationError('Error updating attendee status', 500);
         }
     }
+
+    async getAllForExport(filters = {}) {
+        try {
+            return await Appointment.find(filters)
+                .populate('manager', 'firstName lastName email role department')
+                .populate('attendees.user', 'firstName lastName email role department')
+                .sort({ scheduledDate: -1 })
+                .lean();
+        } catch (error) {
+            throw new ApplicationError('Error retrieving appointments for export', 500);
+        }
+    }
+    
+    async aggregate(pipeline) {
+        try {
+            return await Appointment.aggregate(pipeline);
+        } catch (error) {
+            throw new ApplicationError('Error running aggregation query', 500);
+        }
+    }
 }
