@@ -4,15 +4,22 @@ import indexRouter from "./src/routes/index.js"
 import { connectUsingMongoose } from './src/config/mongoose.js';
 import ApplicationError from "./src/middleware/applicationError.js";
 import redisService from './src/services/redis.service.js';
+import { swaggerUi, swaggerSpec } from "./src/config/swagger.js";
+
+ 
+
 
 let app = express()
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 
 app.use("/api", indexRouter);
 
-
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.get("/swagger.json", (req, res) => res.json(swaggerSpec));
 app.use((err, req, res, next) => {
     console.log(err);
     if (err instanceof ApplicationError) {
