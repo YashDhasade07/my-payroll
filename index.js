@@ -14,11 +14,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-
-
 app.use("/api", indexRouter);
 
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.get("/swagger.json", (req, res) => res.json(swaggerSpec));
 app.use((err, req, res, next) => {
     console.log(err);
