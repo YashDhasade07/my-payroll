@@ -8,7 +8,7 @@ export default class TokenRepository {
             const tokenDoc = new Token({
                 token,
                 userId,
-                expiresAt: new Date(Date.now() + 60 * 60 * 1000) // 1 hour
+                expiresAt: new Date(Date.now() + 12 * 60 * 60 * 1000) 
             });
             return await tokenDoc.save();
         } catch (error) {

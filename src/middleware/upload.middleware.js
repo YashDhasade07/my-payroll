@@ -3,19 +3,17 @@ import path from 'path';
 import fs from 'fs';
 import ApplicationError from './applicationError.js';
 
-// Create uploads directory if it doesn't exist
+
 const uploadsDir = './uploads';
 if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
 }
 
-// Configure multer for file uploads
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
         cb(null, uploadsDir);
     },
     filename: function (req, file, cb) {
-        // Generate unique filename: timestamp-userId-originalname
         const timestamp = Date.now();
         const userId = req.userId;
         const sanitizedOriginalName = file.originalname.replace(/[^a-zA-Z0-9.-]/g, '_');
@@ -24,7 +22,6 @@ const storage = multer.diskStorage({
     }
 });
 
-// File filter to allow only CSV and Excel files
 const fileFilter = (req, file, cb) => {
     const allowedMimes = [
         'text/csv',
@@ -52,7 +49,6 @@ const upload = multer({
     fileFilter: fileFilter
 });
 
-// Error handling middleware for multer
 const handleUploadError = (error, req, res, next) => {
     if (error instanceof multer.MulterError) {
         if (error.code === 'LIMIT_FILE_SIZE') {

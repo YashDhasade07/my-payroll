@@ -10,7 +10,6 @@ export default class AppointmentController {
         this.blockedUserRepository = new BlockedUserRepository();
     }
 
-    // Get all appointments with filters
     async getAllAppointments(req, res, next) {
         try {
             const userId = req.userId;
@@ -18,10 +17,9 @@ export default class AppointmentController {
             const page = parseInt(req.query.page) || 1;
             const limit = parseInt(req.query.limit) || 10;
             
-            // Filter parameters
+
             const filters = {};
             
-            // Date filtering
             if (req.query.startDate) {
                 filters.scheduledDate = { $gte: new Date(req.query.startDate) };
             }
@@ -33,27 +31,22 @@ export default class AppointmentController {
                 }
             }
             
-            // Status filtering
             if (req.query.status) {
                 filters.status = req.query.status;
             }
             
-            // Role-based filtering
             if (userRole === 'Manager') {
-                // Managers see appointments they created
                 if (req.query.type === 'created') {
                     filters.manager = userId;
                 } else if (req.query.type === 'assigned') {
                     filters['attendees.user'] = userId;
                 } else {
-                    // Default: show both created and assigned
                     filters.$or = [
                         { manager: userId },
                         { 'attendees.user': userId }
                     ];
                 }
             } else {
-                // Developers see only appointments they're assigned to
                 filters['attendees.user'] = userId;
             }
 
@@ -82,20 +75,17 @@ export default class AppointmentController {
         }
     }
 
-    // Create new appointment (managers only)
     async createAppointment(req, res, next) {
         try {
             const managerId = req.userId;
             const userRole = req.userRole;
 
-            // Check if user is a manager
             if (userRole !== 'Manager') {
                 throw new ApplicationError('Only managers can create appointments', 403);
             }
 
             const { title, description, attendeeIds, scheduledDate, duration } = req.body;
 
-            // Validation
             if (!title || !attendeeIds || !scheduledDate || !duration) {
                 throw new ApplicationError('Title, attendees, scheduled date, and duration are required', 400);
             }
@@ -104,12 +94,10 @@ export default class AppointmentController {
                 throw new ApplicationError('At least one attendee is required', 400);
             }
 
-            // Validate scheduled date is in future
             if (new Date(scheduledDate) <= new Date()) {
                 throw new ApplicationError('Scheduled date must be in the future', 400);
             }
 
-            // Check if all attendees exist and are developers
             const attendees = await this.userRepository.findByIds(attendeeIds);
             if (attendees.length !== attendeeIds.length) {
                 throw new ApplicationError('One or more attendees not found', 404);
@@ -120,7 +108,6 @@ export default class AppointmentController {
                 throw new ApplicationError('All attendees must be developers', 400);
             }
 
-            // Check for blocked users
             for (const attendeeId of attendeeIds) {
                 const isBlocked = await this.blockedUserRepository.isBlocked(managerId, attendeeId) ||
                                 await this.blockedUserRepository.isBlocked(attendeeId, managerId);
@@ -131,7 +118,6 @@ export default class AppointmentController {
                 }
             }
 
-            // Create appointment data
             const appointmentData = {
                 title,
                 description,
@@ -162,7 +148,6 @@ export default class AppointmentController {
         }
     }
 
-    // Get appointment by ID
     async getAppointmentById(req, res, next) {
         try {
             const appointmentId = req.params.id;
@@ -202,7 +187,7 @@ export default class AppointmentController {
         }
     }
 
-    // Update appointment (managers only)
+
     async updateAppointment(req, res, next) {
         try {
             const appointmentId = req.params.id;
@@ -213,25 +198,21 @@ export default class AppointmentController {
                 throw new ApplicationError('Appointment ID is required', 400);
             }
 
-            // Check if user is a manager
             if (userRole !== 'Manager') {
                 throw new ApplicationError('Only managers can update appointments', 403);
             }
 
-            // Check if appointment exists
             const existingAppointment = await this.appointmentRepository.findById(appointmentId);
             if (!existingAppointment) {
                 throw new ApplicationError('Appointment not found', 404);
             }
 
-            // Check if manager owns this appointment
             if (existingAppointment.manager._id.toString() !== userId) {
                 throw new ApplicationError('You can only update your own appointments', 403);
             }
 
             const { title, description, attendeeIds, scheduledDate, duration, status } = req.body;
 
-            // Prepare update data
             const updateData = {};
             if (title !== undefined) updateData.title = title;
             if (description !== undefined) updateData.description = description;
@@ -244,13 +225,11 @@ export default class AppointmentController {
             if (duration !== undefined) updateData.duration = duration;
             if (status !== undefined) updateData.status = status;
 
-            // Handle attendee updates
             if (attendeeIds && Array.isArray(attendeeIds)) {
                 if (attendeeIds.length === 0) {
                     throw new ApplicationError('At least one attendee is required', 400);
                 }
 
-                // Validate new attendees
                 const attendees = await this.userRepository.findByIds(attendeeIds);
                 if (attendees.length !== attendeeIds.length) {
                     throw new ApplicationError('One or more attendees not found', 404);
@@ -261,7 +240,6 @@ export default class AppointmentController {
                     throw new ApplicationError('All attendees must be developers', 400);
                 }
 
-                // Check for blocked users
                 for (const attendeeId of attendeeIds) {
                     const isBlocked = await this.blockedUserRepository.isBlocked(userId, attendeeId) ||
                                     await this.blockedUserRepository.isBlocked(attendeeId, userId);
@@ -272,7 +250,6 @@ export default class AppointmentController {
                     }
                 }
 
-                // Preserve existing responses for unchanged attendees
                 const existingAttendees = existingAppointment.attendees;
                 updateData.attendees = attendeeIds.map(id => {
                     const existing = existingAttendees.find(a => a.user._id.toString() === id);
@@ -301,7 +278,6 @@ export default class AppointmentController {
         }
     }
 
-    // Delete appointment (managers only)
     async deleteAppointment(req, res, next) {
         try {
             const appointmentId = req.params.id;
@@ -312,18 +288,15 @@ export default class AppointmentController {
                 throw new ApplicationError('Appointment ID is required', 400);
             }
 
-            // Check if user is a manager
             if (userRole !== 'Manager') {
                 throw new ApplicationError('Only managers can delete appointments', 403);
             }
 
-            // Check if appointment exists
             const appointment = await this.appointmentRepository.findById(appointmentId);
             if (!appointment) {
                 throw new ApplicationError('Appointment not found', 404);
             }
 
-            // Check if manager owns this appointment
             if (appointment.manager._id.toString() !== userId) {
                 throw new ApplicationError('You can only delete your own appointments', 403);
             }
@@ -359,13 +332,11 @@ export default class AppointmentController {
             //     throw new ApplicationError('Only developers can accept appointments', 403);
             // }
     
-            // Get appointment
             const appointment = await this.appointmentRepository.findById(appointmentId);
             if (!appointment) {
                 throw new ApplicationError('Appointment not found', 404);
             }
     
-            // Check if user is assigned to this appointment
             const attendeeIndex = appointment.attendees.findIndex(
                 attendee => attendee.user._id.toString() === userId
             );
@@ -374,7 +345,6 @@ export default class AppointmentController {
                 throw new ApplicationError('You are not assigned to this appointment', 403);
             }
     
-            // Update attendee status
             const updatedAppointment = await this.appointmentRepository.updateAttendeeStatus(
                 appointmentId, 
                 userId, 
@@ -396,7 +366,6 @@ export default class AppointmentController {
         }
     }
     
-    // Decline appointment (developers only)
     async declineAppointment(req, res, next) {
         try {
             const appointmentId = req.params.id;
@@ -407,18 +376,15 @@ export default class AppointmentController {
                 throw new ApplicationError('Appointment ID is required', 400);
             }
     
-            // Only developers can decline appointments
             if (userRole !== 'Developer') {
                 throw new ApplicationError('Only developers can decline appointments', 403);
             }
     
-            // Get appointment
             const appointment = await this.appointmentRepository.findById(appointmentId);
             if (!appointment) {
                 throw new ApplicationError('Appointment not found', 404);
             }
     
-            // Check if user is assigned to this appointment
             const attendeeIndex = appointment.attendees.findIndex(
                 attendee => attendee.user._id.toString() === userId
             );
@@ -429,7 +395,6 @@ export default class AppointmentController {
     
             const { reason } = req.body;
     
-            // Update attendee status
             const updatedAppointment = await this.appointmentRepository.updateAttendeeStatus(
                 appointmentId, 
                 userId, 
@@ -452,7 +417,6 @@ export default class AppointmentController {
         }
     }
     
-    // Get appointment status
     async getAppointmentStatus(req, res, next) {
         try {
             const appointmentId = req.params.id;
@@ -467,7 +431,6 @@ export default class AppointmentController {
                 throw new ApplicationError('Appointment not found', 404);
             }
     
-            // Check if user has access to this appointment
             const isManager = appointment.manager._id.toString() === userId;
             const isAttendee = appointment.attendees.some(attendee => 
                 attendee.user._id.toString() === userId
@@ -477,7 +440,6 @@ export default class AppointmentController {
                 throw new ApplicationError('You do not have access to this appointment', 403);
             }
     
-            // Prepare status summary
             const statusSummary = {
                 appointmentId: appointment._id,
                 title: appointment.title,
@@ -521,7 +483,6 @@ export default class AppointmentController {
         }
     }
     
-    // Get current user's created appointments
     async getMyCreatedAppointments(req, res, next) {
         try {
             const userId = req.userId;
@@ -529,7 +490,6 @@ export default class AppointmentController {
             const page = parseInt(req.query.page) || 1;
             const limit = parseInt(req.query.limit) || 10;
     
-            // Only managers can have created appointments
             if (userRole !== 'Manager') {
                 return res.status(200).json({
                     success: true,
@@ -546,10 +506,9 @@ export default class AppointmentController {
                 });
             }
     
-            // Apply filters
+           
             const filters = { manager: userId };
-            
-            // Date filtering
+        
             if (req.query.startDate) {
                 filters.scheduledDate = { $gte: new Date(req.query.startDate) };
             }
@@ -590,17 +549,14 @@ export default class AppointmentController {
         }
     }
     
-    // Get current user's assigned appointments
     async getMyAssignedAppointments(req, res, next) {
         try {
             const userId = req.userId;
             const page = parseInt(req.query.page) || 1;
             const limit = parseInt(req.query.limit) || 10;
     
-            // Apply filters
             const filters = { 'attendees.user': userId };
-            
-            // Date filtering
+
             if (req.query.startDate) {
                 filters.scheduledDate = { $gte: new Date(req.query.startDate) };
             }
@@ -616,7 +572,6 @@ export default class AppointmentController {
                 filters.status = req.query.status;
             }
     
-            // Filter by response status
             if (req.query.responseStatus) {
                 filters['attendees.status'] = req.query.responseStatus;
             }
@@ -645,8 +600,7 @@ export default class AppointmentController {
             next(new ApplicationError('Something went wrong while retrieving assigned appointments', 500));
         }
     }
-    
-    // Get specific user's created appointments
+
     async getUserCreatedAppointments(req, res, next) {
         try {
             const targetUserId = req.params.userId;
@@ -658,19 +612,16 @@ export default class AppointmentController {
             if (!targetUserId) {
                 throw new ApplicationError('User ID is required', 400);
             }
-    
-            // Authorization: users can see their own, managers can see others
+
             if (currentUserRole !== 'Manager' && targetUserId !== currentUserId) {
                 throw new ApplicationError('You can only view your own appointments', 403);
             }
     
-            // Check if target user exists
             const targetUser = await this.userRepository.findById(targetUserId);
             if (!targetUser) {
                 throw new ApplicationError('User not found', 404);
             }
-    
-            // Apply filters
+
             const filters = { manager: targetUserId };
             
             if (req.query.startDate) {
@@ -718,8 +669,7 @@ export default class AppointmentController {
             next(new ApplicationError('Something went wrong while retrieving user created appointments', 500));
         }
     }
-    
-    // Get specific user's assigned appointments
+
     async getUserAssignedAppointments(req, res, next) {
         try {
             const targetUserId = req.params.userId;
@@ -732,18 +682,15 @@ export default class AppointmentController {
                 throw new ApplicationError('User ID is required', 400);
             }
     
-            // Authorization: users can see their own, managers can see others
             if (currentUserRole !== 'Manager' && targetUserId !== currentUserId) {
                 throw new ApplicationError('You can only view your own appointments', 403);
             }
     
-            // Check if target user exists
             const targetUser = await this.userRepository.findById(targetUserId);
             if (!targetUser) {
                 throw new ApplicationError('User not found', 404);
             }
-    
-            // Apply filters
+
             const filters = { 'attendees.user': targetUserId };
             
             if (req.query.startDate) {
@@ -802,11 +749,9 @@ export default class AppointmentController {
             const userRole = req.userRole;
             const page = parseInt(req.query.page) || 1;
             const limit = parseInt(req.query.limit) || 10;
-    
-            // Build complex filters
+
             const filters = {};
     
-            // Date range filtering
             if (req.query.startDate || req.query.endDate) {
                 filters.scheduledDate = {};
                 if (req.query.startDate) {
@@ -817,7 +762,6 @@ export default class AppointmentController {
                 }
             }
     
-            // Status filtering (multiple values supported)
             if (req.query.status) {
                 const statuses = req.query.status.split(',');
                 filters.status = { $in: statuses };
@@ -835,28 +779,19 @@ export default class AppointmentController {
                 }
             }
     
-            // Manager filtering
             if (req.query.managerId) {
                 filters.manager = req.query.managerId;
             }
     
-            // Attendee status filtering
             if (req.query.attendeeStatus) {
                 filters['attendees.status'] = req.query.attendeeStatus;
             }
     
-            // Department filtering (through manager/attendees)
-            if (req.query.department) {
-                // This would require a more complex aggregation query
-                // For now, we'll skip this advanced feature
-            }
-    
-            // Role-based access control
             if (userRole === 'Developer') {
-                // Developers see only appointments they're assigned to
+             
                 filters['attendees.user'] = userId;
             } else if (userRole === 'Manager') {
-                // Managers can see all or filter by their own
+      
                 if (req.query.myAppointments === 'true') {
                     filters.$or = [
                         { manager: userId },

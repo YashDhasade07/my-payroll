@@ -12,12 +12,12 @@ class RedisService {
             this.available = !!this.client;
             
             if (this.available) {
-                console.log('🚀 Redis caching enabled - tokens will be cached');
+                console.log('Redis caching enabled - tokens will be cached');
             } else {
-                console.log('📊 Redis not available - using database only');
+                console.log('Redis not available - using database only');
             }
         } catch (error) {
-            console.log('⚠️  Redis initialization failed');
+            console.log('Redis initialization failed');
             this.available = false;
         }
     }
@@ -37,7 +37,7 @@ class RedisService {
                 JSON.stringify(tokenData)
             );
 
-            console.log('✅ Token cached in Redis');
+            console.log('Token cached in Redis');
             return true;
         } catch (error) {
             console.warn('Redis store failed:', error.message);
@@ -55,7 +55,7 @@ class RedisService {
                 return null;
             }
 
-            console.log('✅ Token found in Redis cache');
+            console.log('Token found in Redis cache');
             return JSON.parse(tokenData);
         } catch (error) {
             console.warn('Redis get failed:', error.message);
@@ -68,7 +68,7 @@ class RedisService {
 
         try {
             const result = await this.client.del(`token:${token}`);
-            console.log('✅ Token deleted from Redis');
+            console.log('Token deleted from Redis');
             return result > 0;
         } catch (error) {
             console.warn('Redis delete failed:', error.message);

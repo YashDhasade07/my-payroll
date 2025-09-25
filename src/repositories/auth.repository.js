@@ -23,7 +23,6 @@ export default class AuthRepository {
         }
     }
 
-    // Using the static method from the model
     async findByEmailWithPassword(email) {
         try {
             return await User.findByEmailWithPassword(email);

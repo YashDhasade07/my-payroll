@@ -60,7 +60,6 @@ const appointmentSchema = new mongoose.Schema({
   toObject: { virtuals: true }
 });
 
-// Indexes for performance
 appointmentSchema.index({ manager: 1, scheduledDate: 1 });
 appointmentSchema.index({ 'attendees.user': 1, scheduledDate: 1 });
 appointmentSchema.index({ scheduledDate: 1, status: 1 });

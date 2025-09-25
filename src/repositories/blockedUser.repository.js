@@ -154,7 +154,6 @@ export default class BlockedUserRepository {
 
     async clearAllBlocksForUser(userId) {
         try {
-            // Remove all blocks where user is blocker or blocked
             await BlockedUser.deleteMany({
                 $or: [
                     { blocker: userId },

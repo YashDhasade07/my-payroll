@@ -26,24 +26,24 @@ class RedisConfig {
             });
 
             this.client.on('connect', () => {
-                console.log('✅ Redis client connected');
+                console.log('Redis client connected');
                 this.isConnected = true;
             });
 
             this.client.on('ready', () => {
-                console.log('✅ Redis client ready');
+                console.log('Redis client ready');
                 this.isConnected = true;
             });
 
             this.client.on('end', () => {
-                console.log('⚠️  Redis client disconnected');
+                console.log('Redis client disconnected');
                 this.isConnected = false;
             });
 
             await this.client.connect();
             return this.client;
         } catch (error) {
-            console.warn(`⚠️  Redis connection failed: ${error.message}`);
+            console.warn(`Redis connection failed: ${error.message}`);
             this.isConnected = false;
             this.client = null;
             return null;

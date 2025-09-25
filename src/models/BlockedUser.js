@@ -20,14 +20,11 @@ const blockedUserSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Compound unique index to prevent duplicate blocking
 blockedUserSchema.index({ blocker: 1, blocked: 1 }, { unique: true });
 
-// Additional indexes for queries
 blockedUserSchema.index({ blocker: 1 });
 blockedUserSchema.index({ blocked: 1 });
 
-// Prevent self-blocking
 blockedUserSchema.pre('save', function(next) {
   if (this.blocker.equals(this.blocked)) {
     return next(new Error('Users cannot block themselves'));

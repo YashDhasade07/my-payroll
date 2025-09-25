@@ -7,7 +7,6 @@ const tokenRepository = new TokenRepository();
 
 const jwtAuth = async (req, res, next) => {
     try {
-        // Get token from header
         const token = req.headers['authorization'];
         if (!token) {
             return res.status(401).json({
@@ -21,10 +20,8 @@ const jwtAuth = async (req, res, next) => {
         // Check if token exists in database
         // const tokenDoc = await tokenRepository.findByToken(token);
         if (tokenData) {
-            // Verify JWT token
             const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
             
-            // Add user info to request
             req.userId = decoded.userId;
             req.userEmail = decoded.email;
             req.userRole = decoded.role;
@@ -42,8 +39,7 @@ const jwtAuth = async (req, res, next) => {
         }
 
 
-        //Cache in Redis for future requests
-        let cacheResult = await redisService.storeToken(
+        await redisService.storeToken(
             token, 
             tokenDoc.userId.toString(), 
             3600 // 1 hour

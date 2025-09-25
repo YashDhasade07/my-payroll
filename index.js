@@ -15,7 +15,6 @@ app.use("/api", indexRouter);
 
 app.use((err, req, res, next) => {
     console.log(err);
-    // console.log(`///////////////12`);
     if (err instanceof ApplicationError) {
         res.status(err.code).send(err.message)
     }
@@ -33,6 +32,6 @@ app.listen(3020, async ()=>{
     try {
         await redisService.initialize();
     } catch (error) {
-        console.log('⚠️  Continuing without Redis');
+        console.log('Continuing without Redis');
     }
 })

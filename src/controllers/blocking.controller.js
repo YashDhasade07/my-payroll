@@ -8,7 +8,6 @@ export default class BlockingController {
         this.userRepository = new UserRepository();
     }
 
-    // Get current user's blocked list
     async getMyBlockedUsers(req, res, next) {
         try {
             const userId = req.userId;
@@ -40,7 +39,6 @@ export default class BlockingController {
         }
     }
 
-    // Block a user
     async blockUser(req, res, next) {
         try {
             const blockerId = req.userId;
@@ -50,24 +48,20 @@ export default class BlockingController {
                 throw new ApplicationError('User ID is required', 400);
             }
 
-            // Check if trying to block themselves
             if (blockerId === userId) {
                 throw new ApplicationError('You cannot block yourself', 400);
             }
 
-            // Check if target user exists
             const targetUser = await this.userRepository.findById(userId);
             if (!targetUser) {
                 throw new ApplicationError('User not found', 404);
             }
 
-            // Check if user is already blocked
             const existingBlock = await this.blockedUserRepository.isBlocked(blockerId, userId);
             if (existingBlock) {
                 throw new ApplicationError(`${targetUser.firstName} ${targetUser.lastName} is already blocked`, 400);
             }
 
-            // Create block record
             const blockData = {
                 blocker: blockerId,
                 blocked: userId,
@@ -101,7 +95,6 @@ export default class BlockingController {
         }
     }
 
-    // Unblock a user
     async unblockUser(req, res, next) {
         try {
             const blockerId = req.userId;
@@ -111,19 +104,16 @@ export default class BlockingController {
                 throw new ApplicationError('User ID is required', 400);
             }
 
-            // Check if target user exists
             const targetUser = await this.userRepository.findById(blockedUserId);
             if (!targetUser) {
                 throw new ApplicationError('User not found', 404);
             }
 
-            // Check if user is actually blocked
             const blockRecord = await this.blockedUserRepository.findBlockRecord(blockerId, blockedUserId);
             if (!blockRecord) {
                 throw new ApplicationError(`${targetUser.firstName} ${targetUser.lastName} is not blocked`, 400);
             }
 
-            // Remove block record
             await this.blockedUserRepository.unblock(blockerId, blockedUserId);
 
             res.status(200).json({
@@ -149,7 +139,6 @@ export default class BlockingController {
         }
     }
 
-    // Check if specific user is blocked
     async checkIfUserBlocked(req, res, next) {
         try {
             const currentUserId = req.userId;
@@ -159,13 +148,11 @@ export default class BlockingController {
                 throw new ApplicationError('User ID is required', 400);
             }
 
-            // Check if target user exists
             const targetUser = await this.userRepository.findById(targetUserId);
             if (!targetUser) {
                 throw new ApplicationError('User not found', 404);
             }
 
-            // Check blocking status in both directions
             const currentUserBlockedTarget = await this.blockedUserRepository.isBlocked(currentUserId, targetUserId);
             const targetBlockedCurrentUser = await this.blockedUserRepository.isBlocked(targetUserId, currentUserId);
 
@@ -198,7 +185,6 @@ export default class BlockingController {
         }
     }
 
-    // Get users who blocked current user
     async getUsersWhoBlockedMe(req, res, next) {
         try {
             const userId = req.userId;

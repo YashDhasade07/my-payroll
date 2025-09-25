@@ -10,14 +10,12 @@ export default class ReportController {
         this.reportRepository = new ReportRepository();
     }
 
-    // Monthly meeting statistics
     async getMonthlyMeetingStats(req, res, next) {
         try {
             const userId = req.userId;
             const userRole = req.userRole;
             const year = parseInt(req.query.year) || new Date().getFullYear();
 
-            // Role-based filtering
             const userFilter = userRole === 'Manager' ? {} : { 'attendees.user': userId };
 
             const monthlyStats = await this.reportRepository.getMonthlyStats(year, userFilter);
@@ -46,7 +44,6 @@ export default class ReportController {
         }
     }
 
-    // Custom date range report
     async getCustomDateRangeReport(req, res, next) {
         try {
             const userId = req.userId;
@@ -64,7 +61,6 @@ export default class ReportController {
                 throw new ApplicationError('Start date must be before end date', 400);
             }
 
-            // Role-based filtering
             const userFilter = userRole === 'Manager' ? {} : { 'attendees.user': userId };
 
             const customReport = await this.reportRepository.getCustomDateRangeReport(start, end, userFilter);
@@ -92,13 +88,11 @@ export default class ReportController {
         }
     }
 
-    // Scheduled meetings count
     async getScheduledMeetingsCount(req, res, next) {
         try {
             const userId = req.userId;
             const userRole = req.userRole;
 
-            // Role-based filtering
             const filters = { status: 'scheduled' };
             if (userRole === 'Developer') {
                 filters['attendees.user'] = userId;
@@ -128,14 +122,12 @@ export default class ReportController {
         }
     }
 
-    // Attended meetings count
     async getAttendedMeetingsCount(req, res, next) {
         try {
             const userId = req.userId;
             const userRole = req.userRole;
-            const timeframe = req.query.timeframe || 'month'; // week, month, quarter, year
+            const timeframe = req.query.timeframe || 'month';
 
-            // Role-based filtering
             const filters = { status: 'completed' };
             if (userRole === 'Developer') {
                 filters['attendees.user'] = userId;
@@ -167,7 +159,6 @@ export default class ReportController {
         }
     }
 
-    // User activity report
     async getUserActivityReport(req, res, next) {
         try {
             const currentUserId = req.userId;
@@ -175,7 +166,6 @@ export default class ReportController {
             const targetUserId = req.query.userId;
             const timeframe = req.query.timeframe || 'month';
 
-            // Permission check
             if (targetUserId && userRole !== 'Manager' && targetUserId !== currentUserId) {
                 throw new ApplicationError('You can only view your own activity report', 403);
             }
@@ -184,7 +174,6 @@ export default class ReportController {
 
             const activityReport = await this.reportRepository.getUserActivityReport(userId, timeframe);
 
-            // Get user details
             const user = await this.userRepository.findById(userId);
             if (!user) {
                 throw new ApplicationError('User not found', 404);
@@ -225,13 +214,11 @@ export default class ReportController {
         }
     }
 
-    // Appointment status summary
     async getAppointmentStatusSummary(req, res, next) {
         try {
             const userId = req.userId;
             const userRole = req.userRole;
 
-            // Role-based filtering
             const userFilter = userRole === 'Manager' ? {} : { 'attendees.user': userId };
 
             const statusSummary = await this.reportRepository.getAppointmentStatusSummary(userFilter);

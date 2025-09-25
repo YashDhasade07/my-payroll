@@ -8,7 +8,6 @@ export default class UserController {
         this.tokenRepository = new TokenRepository();
     }
 
-    // Get all users with pagination
     async getAllUsers(req, res, next) {
         try {
             const page = parseInt(req.query.page) || 1;
@@ -53,7 +52,6 @@ export default class UserController {
         }
     }
 
-    // Get user by ID
     async getUserById(req, res, next) {
         try {
             const userId = req.params.id;
@@ -82,7 +80,6 @@ export default class UserController {
         }
     }
 
-    // Update user by ID
     async updateUserById(req, res, next) {
         try {
             const userId = req.params.id;
@@ -93,14 +90,12 @@ export default class UserController {
                 throw new ApplicationError('User ID is required', 400);
             }
 
-            // Check permissions: users can only update their own profile, managers can update anyone
             if (currentUserRole !== 'Manager' && userId !== currentUserId) {
                 throw new ApplicationError('You can only update your own profile', 403);
             }
 
             const { firstName, lastName, phone, department } = req.body;
 
-            // Don't allow role changes through this endpoint for security
             const updateData = {
                 firstName,
                 lastName,
@@ -108,7 +103,6 @@ export default class UserController {
                 department
             };
 
-            // Remove undefined values
             Object.keys(updateData).forEach(key => 
                 updateData[key] === undefined && delete updateData[key]
             );
@@ -139,7 +133,6 @@ export default class UserController {
         }
     }
 
-    // Delete user by ID (Manager only)
     async deleteUserById(req, res, next) {
         try {
             const userId = req.params.id;
@@ -150,12 +143,10 @@ export default class UserController {
                 throw new ApplicationError('User ID is required', 400);
             }
 
-            // Only managers can delete users
             if (currentUserRole !== 'Manager') {
                 throw new ApplicationError('Only managers can delete users', 403);
             }
 
-            // Prevent managers from deleting themselves
             if (userId === currentUserId) {
                 throw new ApplicationError('You cannot delete your own account', 400);
             }
@@ -165,7 +156,6 @@ export default class UserController {
                 throw new ApplicationError('User not found', 404);
             }
 
-            // Delete user and all their tokens
             await this.userRepository.deleteById(userId);
             await this.tokenRepository.deleteAllForUser(userId);
 
@@ -183,7 +173,6 @@ export default class UserController {
         }
     }
 
-    // Get current user profile
     async getCurrentUserProfile(req, res, next) {
         try {
             const userId = req.userId;
@@ -208,20 +197,17 @@ export default class UserController {
         }
     }
 
-    // Update current user profile
     async updateCurrentUserProfile(req, res, next) {
         try {
             const userId = req.userId;
             const { firstName, lastName, phone, department } = req.body;
 
-            // Don't allow email or role changes through this endpoint
             const updateData = {
                 firstName,
                 lastName,
                 phone,
                 department
             };
-            // Remove undefined values
             Object.keys(updateData).forEach(key => 
                 updateData[key] === undefined && delete updateData[key]
             );
@@ -247,7 +233,7 @@ export default class UserController {
         }
     }
 
-    // Get all managers
+
     async getAllManagers(req, res, next) {
         try {
             const page = parseInt(req.query.page) || 1;
@@ -288,7 +274,6 @@ export default class UserController {
         }
     }
 
-    // Get all developers
     async getAllDevelopers(req, res, next) {
         try {
             const page = parseInt(req.query.page) || 1;

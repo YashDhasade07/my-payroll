@@ -29,7 +29,6 @@ export default class FileProcessor {
                     mapHeaders: ({ header }) => header.trim().toLowerCase()
                 }))
                 .on('data', (data) => {
-                    // Map CSV headers to expected field names
                     const mappedData = {
                         firstName: data.firstname || data['first name'] || data.first_name,
                         lastName: data.lastname || data['last name'] || data.last_name,
@@ -53,13 +52,12 @@ export default class FileProcessor {
     async parseExcel(filePath) {
         try {
             const workbook = XLSX.readFile(filePath);
-            const sheetName = workbook.SheetNames[0]; // Use first sheet
+            const sheetName = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[sheetName];
-            
-            // Convert to JSON with header row as keys
+
             const jsonData = XLSX.utils.sheet_to_json(worksheet, {
-                defval: '', // Default value for empty cells
-                header: 1 // Use first row as header
+                defval: '', 
+                header: 1
             });
 
             if (jsonData.length === 0) {
@@ -69,17 +67,14 @@ export default class FileProcessor {
             const headers = jsonData[0];
             const dataRows = jsonData.slice(1);
 
-            // Map headers to lowercase for consistency
             const normalizedHeaders = headers.map(h => h.toString().trim().toLowerCase());
 
-            // Convert rows to objects
             const results = dataRows.map(row => {
                 const rowObject = {};
                 normalizedHeaders.forEach((header, index) => {
                     rowObject[header] = row[index] ? row[index].toString().trim() : '';
                 });
 
-                // Map Excel headers to expected field names
                 return {
                     firstName: rowObject.firstname || rowObject['first name'] || rowObject.first_name,
                     lastName: rowObject.lastname || rowObject['last name'] || rowObject.last_name,
